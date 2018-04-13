@@ -12,7 +12,7 @@ fn main() {
     };
     if encrypted {
         match decrypt_and_save(file, filename, key) {
-            Ok(_) => println!("Success! You can find the decrypted file in the same directory with a .decrypt suffix"),
+            Ok(_) => println!("Success! You can find the decrypted file in the same directory with the original name."),
             Err(e) => standard_io_error_handling(e),
         }
     } else {

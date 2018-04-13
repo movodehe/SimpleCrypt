@@ -63,7 +63,7 @@ fn encrypt_and_save(f: File, mut name: String, key: u8) -> Result<(), io::Error>
 
 fn decrypt_and_save(f: File, mut name: String, key: u8) -> Result<(), io::Error> {
     let buf_reader = BufReader::new(f);
-    name.trim_right_matches(".encrypt");
+    name = name.trim_right_matches(".encrypt").to_string();
     println!("{}", name);
     match check_file_existance(&name) {
         Some(s) => name = s,

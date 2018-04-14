@@ -4,6 +4,7 @@ use std::fs::File;
 use std::io;
 use std::io::{BufReader, Read, BufWriter, Write};
 use std::str::FromStr;
+use std::convert::TryFrom;
 
 fn main() {
     let (file, filename, key, encrypted) = match get_args() {
@@ -24,13 +25,13 @@ fn main() {
     }
 }
 
-fn get_args() -> Result<(File, String, u8, bool), io::Error> {
+fn get_args() -> Result<(File, String, u64, bool), io::Error> {
     let file = match env::args().nth(1) {
         Some(f) => f,
         None => return Err(io::Error::new(io::ErrorKind::UnexpectedEof, "No argument given")),
     };
     let key = match env::args().nth(2) {
-        Some(k) => match u8::from_str(&k) {
+        Some(k) => match u64::from_str(&k) {
             Ok(k) => k,
             Err(e) => return Err(io::Error::new(io::ErrorKind::Other, format!("{}", e))),
         }
@@ -43,7 +44,7 @@ fn get_args() -> Result<(File, String, u8, bool), io::Error> {
     Ok((File::open(&file)?, file, key, encrypted))
 }
 
-fn crypt_and_save(f: File, mut name: String, key: u8, encrypted: bool) -> Result<(), io::Error> {
+fn crypt_and_save(f: File, mut name: String, key: u64, encrypted: bool) -> Result<(), io::Error> {
     let buf_reader = BufReader::new(f);
     if encrypted {
         name = name.trim_right_matches(".encrypt").to_string();
@@ -55,22 +56,66 @@ fn crypt_and_save(f: File, mut name: String, key: u8, encrypted: bool) -> Result
         None => (),
     }
     let mut buffer = BufWriter::new(File::create(name)?);
+    let mut bytes: [u8; 8] = [0; 8];
+    let mut counter: usize = 0;
+    let mut to_crypt;
+    let mut crypted;
     for byte in buf_reader.bytes() {
-        if encrypted {
-            buffer.write(&[decrypt(byte?, key)])?;
-        } else {
-            buffer.write(&[encrypt(byte?, key)])?;
+        if counter % 8 == 0 && counter > 0 {
+            to_crypt = bytes_to_u64(bytes);
+            if encrypted {
+                crypted = decrypt(to_crypt, key);
+            } else {
+                crypted = encrypt(to_crypt, key);
+            }
+            bytes = u64_to_bytes(crypted);
+            for b in bytes.iter() {
+                buffer.write(&[*b])?;
+            }
         }
+        bytes[counter % 8] = byte?;
+        counter += 1;
     }
     buffer.flush()?;
     Ok(())
 }
 
-fn encrypt(byte: u8, key: u8) -> u8 {
+fn bytes_to_u64(bytes: [u8; 8]) -> u64 {
+    let mut sol: u64 = 0;
+    let mut counter = 7;
+    for byte in bytes.iter() {
+        sol += u64::from(*byte).pow(counter);
+        counter -= 1;
+    }
+    sol
+}
+
+fn u64_to_bytes(number: u64) -> [u8; 8] {
+    let mut bytes: [u8; 8] = [0; 8];
+    let mut n;
+    let mut counter: u8 = 0;
+    let x = u64::from(u8::max_value());
+    let mut b;
+    for _ in 0..7 {
+        n = number;
+        b = match u8::try_from(n / x.pow(7 - u32::from(counter))) {
+            Ok(s) => s,
+            Err(e) => {
+                println!("unable to do the crypto: {}", e);
+                exit(1);
+            }
+        };
+        bytes[usize::from(counter)] = b;
+        counter += 1;
+    }
+    bytes
+}
+
+fn encrypt(byte: u64, key: u64) -> u64 {
     byte.wrapping_add(key)
 }
 
-fn decrypt(byte: u8, key: u8) -> u8 {
+fn decrypt(byte: u64, key: u64) -> u64 {
     byte.wrapping_sub(key)
 }
 
@@ -106,7 +151,6 @@ fn check_file_existance(name: &String) -> Option<String> {
                     }
                 }
             }
-            
         }
         Err(_) => (),
     }

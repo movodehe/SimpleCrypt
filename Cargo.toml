@@ -1,6 +1,6 @@
 [package]
 name = "crypter"
 version = "0.1.0"
-authors = ["Moritz vo der Heiden"]
+authors = ["Moritz von der Heiden"]
 
 [dependencies]

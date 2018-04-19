@@ -94,14 +94,23 @@ fn u64_to_bytes(number: u64) -> [u8; 8] {
     let mut bytes: [u8; 8] = [0; 8];
     let mut n;
     let mut counter: u8 = 0;
-    let x = u64::from(u8::max_value());
+    let x = u64::from(u8::max_value()) + 1;
     let mut b;
     for _ in 0..7 {
         n = number;
-        b = match u8::try_from(n / x.pow(7 - u32::from(counter))) {
+        b = match u8::try_from(match n.checked_div(x.pow(7 - u32::from(counter))) {
+            Some(s) => s,
+            None => {
+                println!("Unable to divide");
+                println!("bytes: {:?}, n: {}, counter: {}, x: {}, tried to divide: {}", bytes, n, counter, x, x.pow(7 - u32::from(counter)));
+                println!("{}", x.pow(7 - u32::from(counter)));
+                exit(1);
+            }
+        }) {
             Ok(s) => s,
             Err(e) => {
-                println!("unable to do the crypto: {}", e);
+                println!("Unable to do convert: {}", e);
+                println!("bytes: {:?}, n: {}, counter: {}, x: {}, tried to convert: {}", bytes, n, counter, x, n / x.pow(7 - u32::from(counter)));
                 exit(1);
             }
         };

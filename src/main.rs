@@ -92,30 +92,18 @@ fn bytes_to_u64(bytes: [u8; 8]) -> u64 {
 
 fn u64_to_bytes(number: u64) -> [u8; 8] {
     let mut bytes: [u8; 8] = [0; 8];
-    let mut n;
-    let mut counter: u8 = 0;
-    let x = u64::from(u8::max_value()) + 1;
+    let bits = 8;
     let mut b;
-    for _ in 0..7 {
-        n = number;
-        b = match u8::try_from(match n.checked_div(x.pow(7 - u32::from(counter))) {
-            Some(s) => s,
-            None => {
-                println!("Unable to divide");
-                println!("bytes: {:?}, n: {}, counter: {}, x: {}, tried to divide: {}", bytes, n, counter, x, x.pow(7 - u32::from(counter)));
-                println!("{}", x.pow(7 - u32::from(counter)));
-                exit(1);
-            }
-        }) {
-            Ok(s) => s,
+    for counter in 0..8 {
+        b = number << (bits * (7 - counter));
+        b >>= bits * 7;
+        bytes[7 - counter] = match u8::try_from(b) {
+            Ok(byte) => byte,
             Err(e) => {
-                println!("Unable to do convert: {}", e);
-                println!("bytes: {:?}, n: {}, counter: {}, x: {}, tried to convert: {}", bytes, n, counter, x, n / x.pow(7 - u32::from(counter)));
-                exit(1);
+                 println!("Unable to do convert: {}", e);
+                 exit(1);
             }
         };
-        bytes[usize::from(counter)] = b;
-        counter += 1;
     }
     bytes
 }
@@ -168,4 +156,39 @@ fn check_file_existance(name: &String) -> Option<String> {
 fn standard_io_error_handling(e: io::Error) {
     println!("ERROR: {}", e);
     exit(1);
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    
+    # [test]
+    fn u64_to_bytes_1() {
+        assert_eq!([0; 8], u64_to_bytes(0));
+    }
+    # [test]
+    fn u64_to_bytes_2() {
+        assert_eq!([0, 0, 0, 0, 0, 0, 0, 123], u64_to_bytes(123));
+    }
+    # [test]
+    fn u64_to_bytes_3() {
+        assert_eq!([0, 0, 0, 0, 0, 0, 1, 0], u64_to_bytes(256));
+    }
+    # [test]
+    fn u64_to_bytes_4() {
+        let base: u64 = 256;
+        assert_eq!([100, 0, 0, 0, 0, 0, 0, 0], u64_to_bytes(base.pow(7) * 100));
+    }
+    # [test]
+    fn u64_to_bytes_5() {
+        let base: u64 = 256;
+        assert_eq!([89, 233, 92, 97, 1, 33, 255, 123], u64_to_bytes(base.pow(0) * 123 + base.pow(1) * 255 + base.pow(2) * 33 + base.pow(3) * 1
+        + base.pow(4) * 97 + base.pow(5) * 92 + base.pow(6) * 233 + base.pow(7) * 89));
+    }
+    # [test]
+    fn u64_to_bytes_6() {
+        let base: u64 = 256;
+        assert_eq!([255, 255, 255, 255, 255, 255, 255, 255], u64_to_bytes(base.pow(0) * 255 + base.pow(1) * 255 + base.pow(2) * 255 + base.pow(3) * 255
+        + base.pow(4) * 255 + base.pow(5) * 255 + base.pow(6) * 255 + base.pow(7) * 255));
+    }
 }

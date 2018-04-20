@@ -150,7 +150,6 @@ fn check_file_existance(name: &String) -> Option<String> {
                     input.clear();
                     match io::stdin().read_line(&mut input) {
                         Ok(_) => {
-                            println!("{}", input);
                             return Some(input.trim_right().to_string());
                         }
                         Err(e) => {

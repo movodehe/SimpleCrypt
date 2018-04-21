@@ -109,10 +109,10 @@ fn u64_to_u8(mut number: u64) -> u8 {
 
 fn bytes_to_u64(bytes: [u8; 8]) -> u64 {
     let mut sol: u64 = 0;
-    let mut counter = 7;
+    let bits = 8;
     for byte in bytes.iter() {
-        sol += u64::from(*byte).pow(counter);
-        counter -= 1;
+        sol <<= bits;
+        sol += u64::from(*byte);
     }
     sol
 }

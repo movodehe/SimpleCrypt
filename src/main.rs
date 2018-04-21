@@ -76,8 +76,35 @@ fn crypt_and_save(f: File, mut name: String, key: u64, encrypted: bool) -> Resul
         bytes[counter % 8] = byte?;
         counter += 1;
     }
+    if counter % 8 != 0 {
+        crypt_and_save_remaining(bytes, counter % 8, &mut buffer, key, encrypted)?;
+    }
     buffer.flush()?;
     Ok(())
+}
+
+fn crypt_and_save_remaining(bytes: [u8; 8], number: usize, buffer: &mut BufWriter<std::fs::File>, key: u64, encrypted: bool) -> Result<(), io::Error> {
+    let small_key = u64_to_u8(key);
+    for counter in 0..number {
+        if encrypted {
+            buffer.write(&[decrypt_small(bytes[counter], small_key)])?;
+        } else {
+            buffer.write(&[encrypt_small(bytes[counter], small_key)])?;
+        }
+    }
+    Ok(())
+}
+
+fn u64_to_u8(mut number: u64) -> u8 {
+    number <<= 56;
+    number >>= 56;
+    match u8::try_from(number) {
+        Ok(byte) => byte,
+        Err(e) => {
+            println!("Magical Error ¯\\(°_o)/¯ {}", e);
+            exit(1);
+        }
+    }
 }
 
 fn bytes_to_u64(bytes: [u8; 8]) -> u64 {
@@ -113,6 +140,14 @@ fn encrypt(byte: u64, key: u64) -> u64 {
 }
 
 fn decrypt(byte: u64, key: u64) -> u64 {
+    byte.wrapping_sub(key)
+}
+
+fn encrypt_small(byte: u8, key: u8) -> u8 {
+    byte.wrapping_add(key)
+}
+
+fn decrypt_small(byte: u8, key: u8) -> u8 {
     byte.wrapping_sub(key)
 }
 

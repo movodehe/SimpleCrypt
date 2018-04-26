@@ -8,7 +8,7 @@ fn main() {
 	println!("*                   Welcome to SimpleCrypt                   *");
 	println!("*                  by movodehe and wholl0p.                  *");
 	println!("*                                                            *");
-    println!("*                       version: {}                       *", version);
+	println!("*                       version: {}                       *", version);
 	println!("*                                                            *");	
 	println!("*                  Usage: [file] [bitshift]                  *");
 	println!("*                                                            *");

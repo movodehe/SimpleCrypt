@@ -1,60 +1,11 @@
+use std;
 use std::process::exit;
-use std::env;
 use std::fs::File;
-use std::io;
 use std::io::{BufReader, Read, BufWriter, Write};
-use std::str::FromStr;
 use std::convert::TryFrom;
 
-pub fn run() {
-    let (file, filename, key, encrypted) = match get_args() {
-        Ok(args) => args,
-        Err(e) => return standard_io_error_handling(e),
-    };
-    match crypt_and_save(file, filename, key, encrypted) {
-        Ok(_) => {
-            if encrypted {
-                println!("Success! You can find the decrypted file in the same directory with the original or chosen name.");
-            } else {
-                println!("Success! You can find the encrypted file in the same directory with a .encrypt suffix");
-                println!("Advise: You can now test to decrypt the file again and then should delete the both unencrypted files.");
-                println!("Otherwise you whould have just wasted your time and no one wants to waist their time.");
-            }
-        }
-        Err(e) => standard_io_error_handling(e),
-    }
-}
-
-fn get_args() -> Result<(File, String, u64, bool), io::Error> {
-    let file = match env::args().nth(1) {
-        Some(f) => f,
-        None => return Err(io::Error::new(io::ErrorKind::UnexpectedEof, "No argument given")),
-    };
-    let key = match env::args().nth(2) {
-        Some(k) => match u64::from_str(&k) {
-            Ok(k) => k,
-            Err(e) => return Err(io::Error::new(io::ErrorKind::Other, format!("{}", e))),
-        }
-        None => return Err(io::Error::new(io::ErrorKind::UnexpectedEof, "No key given")),
-    };
-    let mut encrypted = false;
-    if file.ends_with(".encrypt") {
-        encrypted = true;
-    }
-    Ok((File::open(&file)?, file, key, encrypted))
-}
-
-fn crypt_and_save(f: File, mut name: String, key: u64, encrypted: bool) -> Result<(), io::Error> {
+pub fn crypt_and_save(f: File, mut name: String, key: u64, encrypted: bool) -> Result<(), CryptError> {
     let buf_reader = BufReader::new(f);
-    if encrypted {
-        name = name.trim_right_matches(".encrypt").to_string();
-    } else {
-        name.push_str(".encrypt");
-    }
-    match check_file_existance(&name) {
-        Some(s) => name = s,
-        None => (),
-    }
     let mut buffer = BufWriter::new(File::create(name)?);
     let mut bytes: [u8; 8] = [0; 8];
     let mut counter: usize = 0;
@@ -83,7 +34,7 @@ fn crypt_and_save(f: File, mut name: String, key: u64, encrypted: bool) -> Resul
     Ok(())
 }
 
-fn crypt_and_save_remaining(bytes: [u8; 8], number: usize, buffer: &mut BufWriter<File>, key: u64, encrypted: bool) -> Result<(), io::Error> {
+fn crypt_and_save_remaining(bytes: [u8; 8], number: usize, buffer: &mut BufWriter<File>, key: u64, encrypted: bool) -> Result<(), CryptError> {
     let small_key = u64_to_u8(key);
     for counter in 0..number {
         if encrypted {
@@ -151,44 +102,27 @@ fn decrypt_small(byte: u8, key: u8) -> u8 {
     byte.wrapping_sub(key)
 }
 
-fn check_file_existance(name: &String) -> Option<String> {
-    match File::open(&name) {
-        Ok(_) => {
-            loop {
-                let mut input = String::new();
-                println!("The file {} already exists. Do you want to overwrite it? (y/n)", name);
-                match io::stdin().read_line(&mut input) {
-                    Ok(_) => (),
-                    Err(e) => {
-                        println!("ERROR: {}", e);
-                        exit(1);
-                    }
-                }
-                if input.eq("y\n") {
-                    break;
-                }
-                if input.eq("n\n") {
-                    println!("Please choose a new name for the file.");
-                    println!("Note that this time there won't be a check if the file already exists.");
-                    input.clear();
-                    match io::stdin().read_line(&mut input) {
-                        Ok(_) => {
-                            return Some(input.trim_right().to_string());
-                        }
-                        Err(e) => {
-                            println!("ERROR: {}", e);
-                            exit(1);
-                        }
-                    }
-                }
-            }
-        }
-        Err(_) => (),
-    }
-    None
+pub fn standard_crypt_error_handling(e: CryptError) {
+    println!("ERROR: {}", e.error_information);
+    exit(1);
 }
 
-fn standard_io_error_handling(e: io::Error) {
-    println!("ERROR: {}", e);
-    exit(1);
+#[derive(Debug)]
+pub struct CryptError {
+    pub error_information: String,
+}
+impl CryptError {
+    pub fn new(string: String) -> CryptError {
+        CryptError { error_information: string }
+    }
+}
+impl From<std::io::Error> for CryptError {
+    fn from(e: std::io::Error) -> CryptError {
+        CryptError::new(e.to_string())
+    }
+}
+impl From<std::num::ParseIntError> for CryptError {
+    fn from(e: std::num::ParseIntError) -> CryptError {
+        CryptError::new(e.to_string())
+    }
 }

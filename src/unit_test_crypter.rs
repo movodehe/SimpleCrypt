@@ -1,8 +1,6 @@
-use crypter::{bytes_to_u64, u64_to_bytes};
-
 #[cfg(test)]
 mod tests {
-    use super::*;
+    use crypter::{bytes_to_u64, u64_to_bytes};
     
     # [test]
     fn u64_to_bytes_1() {

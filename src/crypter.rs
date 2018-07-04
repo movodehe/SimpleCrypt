@@ -1,10 +1,9 @@
-use std;
 use std::process::exit;
 use std::fs::File;
 use std::io::{BufReader, Read, BufWriter, Write};
 use std::convert::TryFrom;
 
-pub fn crypt_and_save(f: File, mut name: String, key: u64, encrypted: bool) -> Result<(), CryptError> {
+pub fn crypt_and_save(f: File, name: String, key: u64, encrypted: bool) -> Result<(), CryptError> {
     let buf_reader = BufReader::new(f);
     let mut buffer = BufWriter::new(File::create(name)?);
     let mut bytes: [u8; 8] = [0; 8];
@@ -121,6 +120,7 @@ impl From<std::io::Error> for CryptError {
         CryptError::new(e.to_string())
     }
 }
+
 impl From<std::num::ParseIntError> for CryptError {
     fn from(e: std::num::ParseIntError) -> CryptError {
         CryptError::new(e.to_string())

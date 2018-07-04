@@ -1,3 +1,5 @@
+#![feature(try_from, extern_prelude)]
+#![allow(dead_code)]
 extern crate simple_crypt;
 extern crate clap;
 mod unit_test_crypter;

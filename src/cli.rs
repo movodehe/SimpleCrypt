@@ -9,7 +9,7 @@ pub fn cli() -> Result<(File, String, u64, bool), CryptError> {
     let matches = App::new("SimpleCrypt")
         .usage("crypter [FLAGS] <INPUT> <key>")
         .version("0.2.0")
-        .author("Moritz von der Heiden")
+        .author("Moritz von der Heiden, Samuel Burch")
         .about("Simple tool to en- and decrypt files.")
         .arg(Arg::with_name("INPUT")
             .help("Sets the input file to use")
@@ -81,7 +81,7 @@ pub fn cli() -> Result<(File, String, u64, bool), CryptError> {
 }
 
 fn get_better_key() -> Option<u64> {
-    println!("Do you want to choose a new key? (y/n)");
+    println!("Do you want to continue? (y/n)");
     loop {
         let mut input = String::new();
         match io::stdin().read_line(&mut input) {
@@ -91,7 +91,8 @@ fn get_better_key() -> Option<u64> {
                 exit(1);
             }
         }
-        if input.eq("y\n") {
+        let conv_char = input.trim_right().to_ascii_lowercase();
+        if conv_char == "n" {
             loop {
                 println!("Please enter your new key:");
                 input.clear();
@@ -108,7 +109,7 @@ fn get_better_key() -> Option<u64> {
                 }
             }
         }
-        else if input.eq("n\n") {
+        else if conv_char == "y" {
             break;
         }
         else {
@@ -131,10 +132,11 @@ fn check_file_existance(name: &String) -> Option<String> {
                         exit(1);
                     }
                 }
-                if input.eq("y\n") {
+                let conv_char = input.trim_right().to_ascii_lowercase();
+                if conv_char == "y" {
                     break;
                 }
-                if input.eq("n\n") {
+                if conv_char == "n" {
                     println!("Please choose a new name for the file.");
                     println!("Note that this time there won't be a check if the file already exists.");
                     input.clear();

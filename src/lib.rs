@@ -1,3 +1,5 @@
+#![feature(try_from, extern_prelude)]
+#![allow(dead_code)]
 extern crate clap;
 mod cli;
 use cli::cli;

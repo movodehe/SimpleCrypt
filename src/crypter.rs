@@ -1,3 +1,4 @@
+#[allow(dead_code)]
 use std::process::exit;
 use std::fs::File;
 use std::io::{BufReader, Read, BufWriter, Write};
